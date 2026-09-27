@@ -1,0 +1,69 @@
+# Schmoose — Pull-Deployment für einen eigenen Ubuntu-Server.
+# Images: ghcr.io/derdast3 (privat — docker login ghcr.io zum Ziehen).
+# Konfiguration: .env (Vorlage deploy/.env.example, Sektion COMMON/PULL).
+# Siehe deploy/PULL.md.
+name: schmoose
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: messenger
+      POSTGRES_USER: messenger
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U messenger -d messenger"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [database]
+
+  server:
+    image: ghcr.io/derdast3/messenger-server:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://messenger:${POSTGRES_PASSWORD}@postgres:5432/messenger
+      PORT: "8080"
+      ATTACHMENT_DIR: /data/attachments
+      COOKIE_SECURE: "true"
+      BASE_URL: ${PUBLIC_HOST:?set PUBLIC_HOST in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      OPENAPI_FILE: /app/openapi.yaml
+      LOG_LEVEL: info
+      OIDC_ENABLED: "${OIDC_ENABLED:-true}"
+      OIDC_ISSUER: "${OIDC_ISSUER:?set OIDC_ISSUER in .env}"
+      OIDC_AUTH_URL: "${OIDC_AUTH_URL:?set OIDC_AUTH_URL in .env}"
+      OIDC_TOKEN_URL: "${OIDC_TOKEN_URL:?set OIDC_TOKEN_URL in .env}"
+      OIDC_JWKS_URL: "${OIDC_JWKS_URL:?set OIDC_JWKS_URL in .env}"
+      OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:?set OIDC_CLIENT_ID in .env}"
+      OIDC_REDIRECT_URI: "https://${PUBLIC_HOST}/api/auth/oidc/callback"
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./attachments:/data/attachments
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [frontend, database]
+
+  web:
+    image: ghcr.io/derdast3/messenger-web:latest
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?set PUBLIC_HOST in .env}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on: [server]
+    networks: [frontend]
+
+networks:
+  frontend: {}
+  database: {}
