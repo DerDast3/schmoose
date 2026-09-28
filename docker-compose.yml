@@ -1,7 +1,8 @@
-# Schmoose — Pull-Deployment für einen eigenen Ubuntu-Server.
+# Schmoose — Pull-Deployment für einen eigenen Server.
 # Images: ghcr.io/derdast3 (privat — docker login ghcr.io zum Ziehen).
-# Konfiguration: .env (Vorlage deploy/.env.example, Sektion COMMON/PULL).
-# Siehe deploy/PULL.md.
+# Konfiguration: .env (Vorlage: .env.sample) — Anleitung: README.md.
+# Diese Datei gehört in das Runtime-Verzeichnis (z. B. /srv/schmoose),
+# NICHT in den Repo-Klon — siehe README, Abschnitt Layout.
 name: schmoose
 
 services:

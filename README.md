@@ -40,6 +40,7 @@ cd /srv/schmoose
 
 # 2. Get the deployment files (this repository)
 git clone https://github.com/DerDast3/schmoose.git repo
+cp repo/docker-compose.yml .
 cp repo/nginx/messenger.conf.template nginx/templates/
 cp repo/.env.sample .env
 
@@ -64,6 +65,12 @@ The database starts empty: the server creates the complete schema on first
 boot and records the version in `schema_migrations`. A seed admin account is
 created on first boot (its password is printed to the server log — change it
 after login).
+
+**Note on the layout:** the repository clone under `repo/` is only the source
+of the deployment files. Run everything from `/srv/schmoose` — that directory
+holds the compose file, `.env`, the nginx template, certificates and all
+persistent state (`postgres/`, `attachments/`). Never start the stack inside
+`repo/`, or the bind mounts would write into the clone.
 
 ## Schema migrations (automatic)
 
@@ -104,6 +111,5 @@ not part of these files.
 ## Troubleshooting
 
 - `docker compose logs server | grep -iE "error|seed|migrate"` — application log
-- `sh verify.sh` — quick checks (containers, database, HTTPS health, disk)
-  when the verify script from this repository is present
+- `docker compose ps` + `docker compose exec postgres pg_isready -U messenger` — stack state
 - Deployment problems: report to the maintainer.
