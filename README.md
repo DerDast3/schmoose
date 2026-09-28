@@ -98,6 +98,41 @@ of the box):
 | Signing | RS256, keys public via JWKS |
 | Token claims | `email` (required — the account mapping key), `preferred_username` |
 
+**Claim mapping for corporate realms.** Keycloak instances that front an
+Active Directory often emit non-standard claim names (in the DIaLOGIKa
+realm the short name arrives as `Krzl`, and `preferred_username` is the AD
+logon name — an email address). Schmoose resolves both identity values
+through configurable fallback chains in `.env`:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `OIDC_CLAIM_EMAIL` | `email,mail,upn` | account mapping key (must contain `@`) |
+| `OIDC_CLAIM_USERNAME` | `preferred_username` | account name candidate for JIT provisioning |
+
+The first claim of the chain present in the ID token wins. For the
+DIaLOGIKa realm set `OIDC_CLAIM_USERNAME=preferred_username,Krzl` so
+accounts are named by the Kürzel (`dast`), not the logon name. If a
+login fails with *OIDC token invalid* / *lacks an email claim*, the
+server log lists the exact claim names the realm actually sent
+(`[oidc] token claims present: …`) — set the chains accordingly.
+
+**Checklist when SSO fails:**
+
+1. `OIDC_ISSUER` must match the token `iss` claim **verbatim** —
+   including scheme, port and realm case (e.g.
+   `https://winkc.dialogika.de:5443/realms/DIaLOGIKaSSO`). If unsure,
+   copy the `issuer` field from
+   `https://<keycloak>/realms/<realm>/.well-known/openid-configuration`.
+2. The **server container** needs outbound access to the `OIDC_JWKS_URL`
+   (non-standard ports can be filtered):
+   ```sh
+   docker compose exec server node -e \
+     "fetch(process.env.OIDC_JWKS_URL).then(r=>console.log('JWKS:',r.status))"
+   # expected: JWKS: 200
+   ```
+3. Clock sync (`timedatectl`) — tokens are only valid for minutes.
+4. `docker compose logs server | grep '\[oidc\]'` shows the diagnosis.
+
 Accounts are created automatically on first SSO login (JIT) with the
 provider's email as their identity; such accounts have no local password and
 sign in via SSO only.
