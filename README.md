@@ -99,22 +99,31 @@ of the box):
 | Token claims | `email` (required — the account mapping key), `preferred_username` |
 
 **Claim mapping for corporate realms.** Keycloak instances that front an
-Active Directory often emit non-standard claim names (in the DIaLOGIKa
-realm the short name arrives as `Krzl`, and `preferred_username` is the AD
-logon name — an email address). Schmoose resolves both identity values
-through configurable fallback chains in `.env`:
+Active Directory often emit non-standard claim names. Schmoose resolves
+every identity value through configurable fallback chains in `.env`:
 
 | Variable | Default | Meaning |
 |---|---|---|
+| `OIDC_CLAIM_DISPLAYNAME` | `name` | full name shown in chats |
+| `OIDC_CLAIM_SHORTNAME` | *(empty)* | Kürzel on avatar chips + people search; empty = initials invented from the display name |
+| `OIDC_CLAIM_PHOTO` | `picture,photoUrl` | profile image (fetched for accounts without an own upload) |
 | `OIDC_CLAIM_EMAIL` | `email,mail,upn` | account mapping key (must contain `@`) |
 | `OIDC_CLAIM_USERNAME` | `preferred_username` | account name candidate for JIT provisioning |
 
 The first claim of the chain present in the ID token wins. For the
-DIaLOGIKa realm set `OIDC_CLAIM_USERNAME=preferred_username,Krzl` so
-accounts are named by the Kürzel (`dast`), not the logon name. If a
-login fails with *OIDC token invalid* / *lacks an email claim*, the
+DIaLOGIKa realm set `OIDC_CLAIM_USERNAME=Krzl,preferred_username` and
+`OIDC_CLAIM_SHORTNAME=Krzl` — accounts are named and shown by the Kürzel
+(`dast`), while the display name stays the full name (`Daniel Stephan`).
+If a login fails with *OIDC token invalid* / *lacks an email claim*, the
 server log lists the exact claim names the realm actually sent
 (`[oidc] token claims present: …`) — set the chains accordingly.
+
+**SSO accounts and profile management.** Accounts created via SSO have no
+local password — the profile dialog hides password change and two-factor
+setup (the APIs reject them), and optionally shows an external link when
+`OIDC_ACCOUNT_URL` is set (e.g. the Keycloak account console). The IdP
+profile photo is applied automatically as long as the user has not
+uploaded an own avatar.
 
 **Checklist when SSO fails:**
 
