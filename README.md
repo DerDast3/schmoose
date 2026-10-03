@@ -3,9 +3,40 @@
 **Schmoose** — *to schmooze: to chat, to talk* — a self-hosted group messenger
 for small teams (up to ~500 members) in the spirit of Mattermost.
 
+Schmoose is for teams that want their chat **on their own metal** — no
+subscription, no telemetry, no lock-in. Messages live in your Postgres,
+attachments in your filesystem, logins come from your identity provider.
+Your colleagues sign in with the company single sign-on, your phone turns
+into a chat device with one QR scan, and the newest message is always —
+always — at the bottom.
+
 This repository contains the **deployment files** for running Schmoose on
 your own server. The application itself is shipped as prebuilt container
 images.
+
+## What you get
+
+- **Real-time everything** — WebSocket live updates, typing indicators,
+  presence dots, unread badges, favorites with drag & drop.
+- **@Mentions** — type `@`, pick a colleague (search by Kürzel *or* full
+  name). Mention someone in a public chat and they join it; their own name
+  glows only for them.
+- **Reactions** — 👍 ❌ 🅰️ at a click, any emoji via the picker; counters
+  count up and down live for everyone in the room.
+- **Markdown, rendered server-side** — the same HTML for every reader,
+  `:tada:` shortcodes, syntax-highlighted code blocks with a copy button,
+  and ten color themes to argue about.
+- **Files** — drag & drop attachments, magic-byte type validation, image
+  previews, stable numbering (links survive edits).
+- **Group life** — public channels with self-join, private groups with
+  owner roles, invites, renames, and a real (confirmed) delete.
+- **Installable PWA** — Android, iOS and desktop; safe-area aware, with
+  its own session storage.
+- **QR device pairing** — scan, approve, done: your phone signs in with a
+  single tap from then on (see below).
+- **Identity done properly** — OIDC single sign-on with claim-mapping
+  chains for corporate realms, JIT provisioning, IdP profile photos, and
+  optional local accounts with TOTP two-factor + recovery codes.
 
 ## What runs
 
@@ -164,3 +195,43 @@ On phones/tablets the login page offers installation: Android/Chrome shows
 a real install dialog, iOS/Safari explains *Share ▸ Add to Home Screen*.
 **Install before signing in** — the installed app has its own session
 storage, so a login done in the regular browser does not carry over.
+
+The installed app is also where the QR scanner lives — next step below.
+
+## Sign in from your phone — QR device pairing
+
+The most friction-free login in the building. Pair once, tap forever:
+
+1. On the **desktop**, open the profile and *Devices ▸ Add device* — a QR
+   code appears.
+2. On the **phone** (installed app), tap *Sign in with QR* and scan it.
+3. Back on the **desktop**, approve the prompt that just appeared — done.
+   The phone signs in automatically, and from then on the login screen
+   offers **"Sign in with this device"**: one tap, no password, no TOTP.
+
+Removing the device in the profile (or letting the sliding 42-day window
+expire through disuse) kills its sessions immediately.
+
+**Why it is safe — the short version:**
+
+- **A photographed QR is worthless on its own.** Pairing only completes
+  when someone approves it *on the desktop that showed the code*. A
+  shoulder-surfer who photographs the screen gets a pending request and
+  nothing else.
+- The QR carries only the origin, a server-generated device ID and an
+  ephemeral ECDH public key. The pairing secret reaches the phone **only in
+  wrapped form** (ECDH + HKDF + AES-256-GCM) and never travels in the
+  clear; the server keeps it like session material. The device ID travels
+  in the URL **fragment** (`#d=…`) — browsers never send that part to any
+  server, so it stays out of logs.
+- On the phone the pairing lives as a **non-extractable HMAC key** in the
+  browser's IndexedDB: page JavaScript can *use* it to answer a login
+  challenge, but can never read it — an XSS bug finds nothing to steal.
+- Device logins are ordinary sessions: a password change, a logout-everywhere
+  or a device revoke ends them like any other session.
+
+---
+
+Schmoose is built to be boring to operate: one compose file, three
+containers, automatic schema migrations, images pulled from ghcr.
+Pull, restart, done — now go schmooze.
