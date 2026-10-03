@@ -157,3 +157,10 @@ not part of these files.
 - `docker compose logs server | grep -iE "error|seed|migrate"` — application log
 - `docker compose ps` + `docker compose exec postgres pg_isready -U messenger` — stack state
 - Deployment problems: report to the maintainer.
+
+## Install as a mobile app (PWA)
+
+On phones/tablets the login page offers installation: Android/Chrome shows
+a real install dialog, iOS/Safari explains *Share ▸ Add to Home Screen*.
+**Install before signing in** — the installed app has its own session
+storage, so a login done in the regular browser does not carry over.
