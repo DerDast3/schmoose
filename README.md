@@ -228,6 +228,134 @@ not part of these files.
 - `docker compose ps` + `docker compose exec postgres pg_isready -U messenger` — stack state
 - Deployment problems: report to the maintainer.
 
+## Integrations — admin guide (mail, HTTP triggers, ingress)
+
+Schmoose can **send mail**, **call HTTP endpoints** and **accept messages
+from the outside** — all driven by ONE operator-owned file:
+`./integrations/integrations.json`. The file is bind-mounted into the
+server read-only, is **hot-reloaded on every use** (editing the file IS the
+admin interface — no restart, no admin UI) and contains secrets, so:
+
+```sh
+mkdir -p integrations
+$EDITOR integrations/integrations.json
+chmod 600 integrations/integrations.json
+```
+
+### The config file, annotated
+
+```jsonc
+{
+  // ── SMTP: ONE global mail account (D79) ──────────────────────────────
+  "smtp": {
+    "host": "mail.example.com",
+    "port": 587,
+    // "implicit" = TLS from the start (port 465)
+    // "starttls" = plain connect, then TLS (port 587)
+    // "none"     = no TLS (only for local test sinks!)
+    "tls": "starttls",
+    "from": "Schmoose <schmoose@example.com>",
+    "user": "schmoose@example.com",
+    "pass": "the-password",
+    // escape hatch for gateways with an incomplete certificate chain
+    // (LE's new 4-cert chain makes this a common mishap). The RIGHT fix is
+    // installing the full chain on the gateway — then remove this flag:
+    // "rejectUnauthorized": true
+  },
+
+  // ── Mail triggers: code → recipient ──────────────────────────────────
+  "mailTriggers": {
+    "support": "support@example.com",
+    "boss":    "ceo@example.com"
+  },
+
+  // ── HTTP triggers: code → destination ────────────────────────────────
+  "postTriggers": {
+    "tickets": {
+      "url": "https://hooks.example.com/services/abc",
+      "headers": { "Authorization": "Bearer the-hook-token" },
+      // "json-template": a JSON body built from the template; the
+      // placeholders {message}, {author} and {chat} are substituted:
+      "kind": "json-template",
+      "template": { "text": "{message}", "user": "{author}", "room": "{chat}" }
+    },
+    "legacy-form": {
+      "url": "https://old.example.com/submit",
+      // "form": classic application/x-www-form-urlencoded; the message
+      // text goes into this field name:
+      "kind": "form",
+      "field": "message"
+    }
+  },
+
+  // ── Ingress API (D80): who may POST messages INTO chats ──────────────
+  "ingress": {
+    // source-IP allowlist (CIDR, IPv4 + IPv6). DEFAULT DENY: no section or
+    // an empty list = the ingest endpoint is off. Note: with Docker's
+    // userland proxy (localhost/hairpin clients) the server sees the
+    // bridge gateway instead of the real client address — allow
+    // 172.16.0.0/12-style ranges accordingly; direct IPv4 and dual-stack
+    // IPv6 clients arrive with their real address.
+    "cidrs": ["192.168.1.0/24", "2a01:db8::/32"],
+    "ratePerMinute": 60
+  }
+}
+```
+
+### Trigger syntax in messages
+
+A message **starting** with `/mail:CODE` or `/post:CODE` (one trigger per
+message, codes are `[a-z0-9_-]`, case-insensitive) fires the integration
+**after** the message is stored — sending never blocks the chat:
+
+| message | effect |
+|---|---|
+| `/mail:support Printer is down again` | mail to `support@example.com` |
+| `/post:tickets Server rebooted` | POST to the tickets hook |
+| `/mail:tipfehler …` | **plain text** — unknown codes are never interpreted |
+
+- **Mail**: subject `<author> — <chat name>`; body is a proper MIME
+  multipart/alternative — plain text (the markdown as typed) plus the
+  server-rendered HTML (same renderer as the chat, links/code/lists all
+  work in the mail client).
+- **HTTP POST**: the JSON template (or form field) with `{message}` = the
+  text after the trigger, `{author}` and `{chat}` filled in. Redirects are
+  not followed; non-2xx answers mark the trigger as failed.
+- **Result chip** (not clickable, not a user reaction): ⏳ while running,
+  👍 when delivered, 👎 on failure. **Editing a 👎 message re-runs the
+  trigger**; 👍 messages are final even after edits.
+- Everything is operator-trusted: anyone in the chat can USE a configured
+  code, so only point codes at destinations you trust your members with.
+
+### Ingress — post INTO Schmoose from the outside
+
+Owners generate a per-chat key in the chat's manage dialog (**API access ▸
+Generate key**): the dialog shows the trio **username, api key, chat GUID**
+exactly once (the server stores only a hash). Then:
+
+```sh
+curl -X POST https://schmoose.example.com/api/chats/<CHAT_GUID>/ingest \
+  -H "Authorization: Bearer <username>;<api-key>" \
+  -H "Content-Type: text/markdown" \
+  --data-binary "Build #42 finished — artifacts attached"
+```
+
+The message enters the chat through the normal pipeline (rendering, live
+WebSocket updates, mentions, triggers) authored by the key's user — ideal
+for service accounts (see *User management*, variant 2/3: an account
+without interactive login is a perfect key holder). One key per user and
+chat; regenerating replaces it, revoking kills access immediately.
+
+### Running as a non-root user
+
+The stack runs fine as a regular user who is a member of the `docker`
+group — be aware this is **root-equivalent on the host** by design (the
+daemon mounts host paths, binds low ports for you). On a dedicated,
+single-purpose server this is the common, accepted setup. If your threat
+model demands more, look at **rootless dockerd** (extra setup; port 443
+then needs the rootlesskit port driver) — everything in this repository
+works unchanged either way.
+
 ## Install as a mobile app (PWA)
 
 On phones/tablets the login page offers installation: Android/Chrome shows

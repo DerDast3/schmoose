@@ -26,8 +26,10 @@ server {
     location /api/ {
         proxy_pass $backend;
         proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Forwarded "for=$remote_addr;proto=$scheme";
         proxy_hide_header X-Content-Type-Options;
     }
 
@@ -35,8 +37,10 @@ server {
     location /realms/ {
         proxy_pass $oidc;
         proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Forwarded "for=$remote_addr;proto=$scheme";
     }
 
     location /ws {
@@ -45,8 +49,10 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Forwarded "for=$remote_addr;proto=$scheme";
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
     }

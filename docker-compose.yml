@@ -43,10 +43,18 @@ services:
       OIDC_JWKS_URL: "${OIDC_JWKS_URL:?set OIDC_JWKS_URL in .env}"
       OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:?set OIDC_CLIENT_ID in .env}"
       OIDC_REDIRECT_URI: "https://${PUBLIC_HOST}/api/auth/oidc/callback"
+      # D79/D80: integrations (mail/post triggers + ingress CIDR allowlist) —
+      # optional; leave unset to disable. The directory holds
+      # integrations.json (chmod 600, hot-reloaded, see README).
+      INTEGRATIONS_DIR: "${INTEGRATIONS_DIR:-}"
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
       - ./attachments:/data/attachments
+      # D79/D80: integrations.json (chmod 600, hot-reloaded) — uncomment
+      # together with INTEGRATIONS_DIR in .env to enable mail/post triggers
+      # and the ingress API (see README "Integrations"):
+      # - ./integrations:/app/integrations:ro
     depends_on:
       postgres:
         condition: service_healthy
