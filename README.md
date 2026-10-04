@@ -115,6 +115,45 @@ docker compose exec postgres psql -U messenger -d messenger \
 docker compose exec server ls /app/dist/db/migrations     # versions in the image
 ```
 
+## User management — three ways
+
+Schmoose does not lock you into one identity story. Pick what fits:
+
+**1. Your own OIDC provider (Keycloak or any compliant IdP).** The full
+SSO experience: your accounts live where your other services live, JIT
+provisioning creates them on first login. Configure the `OIDC_*` block in
+`.env` — details in the *Single sign-on* section below.
+
+**2. The built-in IDP — no Keycloak needed.** A lightweight OIDC provider
+is included, backed by a single JSON file:
+
+```sh
+cp userdata.example.json userdata.json     # then edit: users + initial passwords
+chmod 600 userdata.json
+$EDITOR .env                               # uncomment the OIDC_* block pointing
+                                           # at https://<PUBLIC_HOST>/realms/myrealm
+docker login ghcr.io -u <username>
+docker compose --profile idp up -d
+```
+
+- **Adding/removing users = editing the file.** `userdata.json` is
+  re-read on every login — no restart, no admin UI.
+- Initial passwords sit in **cleartext** in the file and are hashed
+  (scrypt) automatically on each user's **first successful login**.
+  Treat the file like a password list: `chmod 600`, never commit it.
+- The optional per-user `claims` dict replaces the default token claims
+  entirely (handy for display name, short name or a profile photo).
+- The login screen shows *Sign in with SSO*; accounts are created on
+  first login from the file.
+
+**3. Local accounts only.** Set `OIDC_ENABLED=false` and skip the OIDC
+block — users log in with username/email + password, and (optional,
+per-account) TOTP two-factor with recovery codes. The seed admin starts
+you off; profiles are managed in the app.
+
+All three ways mix freely with the **QR device pairing** for phones —
+see below.
+
 ## Single sign-on (OIDC)
 
 Point the `OIDC_*` variables in `.env` at your provider (Keycloak works out
@@ -136,18 +175,18 @@ every identity value through configurable fallback chains in `.env`:
 | Variable | Default | Meaning |
 |---|---|---|
 | `OIDC_CLAIM_DISPLAYNAME` | `name` | full name shown in chats |
-| `OIDC_CLAIM_SHORTNAME` | *(empty)* | Kürzel on avatar chips + people search; empty = initials invented from the display name |
+| `OIDC_CLAIM_SHORTNAME` | *(empty)* | short name (Kürzel) on avatar chips + people search; empty = initials invented from the display name |
 | `OIDC_CLAIM_PHOTO` | `picture,photoUrl` | profile image (fetched for accounts without an own upload) |
 | `OIDC_CLAIM_EMAIL` | `email,mail,upn` | account mapping key (must contain `@`) |
 | `OIDC_CLAIM_USERNAME` | `preferred_username` | account name candidate for JIT provisioning |
 
-The first claim of the chain present in the ID token wins. For the
-DIaLOGIKa realm set `OIDC_CLAIM_USERNAME=Krzl,preferred_username` and
-`OIDC_CLAIM_SHORTNAME=Krzl` — accounts are named and shown by the Kürzel
-(`dast`), while the display name stays the full name (`Daniel Stephan`).
-If a login fails with *OIDC token invalid* / *lacks an email claim*, the
-server log lists the exact claim names the realm actually sent
-(`[oidc] token claims present: …`) — set the chains accordingly.
+The first claim of the chain present in the ID token wins. If your realm
+uses a custom short-name claim, list it FIRST in the username chain —
+accounts are then named and shown by the short name, while the display
+name stays the full name. If a login fails with *OIDC token invalid* /
+*lacks an email claim*, the server log lists the exact claim names the
+realm actually sent (`[oidc] token claims present: …`) — set the chains
+accordingly.
 
 **SSO accounts and profile management.** Accounts created via SSO have no
 local password — the profile dialog hides password change and two-factor
@@ -160,7 +199,7 @@ uploaded an own avatar.
 
 1. `OIDC_ISSUER` must match the token `iss` claim **verbatim** —
    including scheme, port and realm case (e.g.
-   `https://winkc.dialogika.de:5443/realms/DIaLOGIKaSSO`). If unsure,
+   `https://idp.example.com:8443/realms/MyRealm`). If unsure,
    copy the `issuer` field from
    `https://<keycloak>/realms/<realm>/.well-known/openid-configuration`.
 2. The **server container** needs outbound access to the `OIDC_JWKS_URL`
@@ -198,19 +237,28 @@ storage, so a login done in the regular browser does not carry over.
 
 The installed app is also where the QR scanner lives — next step below.
 
-## Sign in from your phone — QR device pairing
+## Connecting your phone — QR device pairing, step by step
 
-The most friction-free login in the building. Pair once, tap forever:
+For everyone doing this the first time — no technical knowledge needed.
+You need your computer and your phone, and about two minutes:
 
-1. On the **desktop**, open the profile and *Devices ▸ Add device* — a QR
-   code appears.
-2. On the **phone** (installed app), tap *Sign in with QR* and scan it.
-3. Back on the **desktop**, approve the prompt that just appeared — done.
-   The phone signs in automatically, and from then on the login screen
-   offers **"Sign in with this device"**: one tap, no password, no TOTP.
-
-Removing the device in the profile (or letting the sliding 42-day window
-expire through disuse) kills its sessions immediately.
+1. **On your computer:** open your Schmoose website in the browser and
+   sign in as usual.
+2. **On your computer:** open the profile menu (top right ▸ *Profile &
+   security*) and find **Devices ▸ Add device**. A QR code appears —
+   leave this window open.
+3. **On your phone:** open the Schmoose website **in the phone browser**
+   and tap **Install app** (Android) or follow the *Add to Home Screen*
+   hint (iOS). This installs Schmoose as an app — you only do this once.
+4. **On your phone:** open the installed Schmoose app, and on the login
+   screen tap **Sign in with QR**. Allow camera access when asked, then
+   point the camera at the QR code on your computer's screen.
+5. **On your computer:** a prompt appears — *"…wants to sign in to your
+   account"* — approve it. Your phone logs in by itself.
+6. **Forever after:** the phone's login screen shows **Sign in with this
+   device** — highlighted for you — and one tap signs you in. **Never
+   scan the QR again**; the pairing stays until you remove the device in
+   the profile (or the sliding 42-day-unused window quietly expires it).
 
 **Why it is safe — the short version:**
 
@@ -219,8 +267,8 @@ expire through disuse) kills its sessions immediately.
   shoulder-surfer who photographs the screen gets a pending request and
   nothing else.
 - The QR carries only the origin, a server-generated device ID and an
-  ephemeral ECDH public key. The pairing secret reaches the phone **only in
-  wrapped form** (ECDH + HKDF + AES-256-GCM) and never travels in the
+  ephemeral ECDH public key. The pairing secret reaches the phone **only
+  in wrapped form** (ECDH + HKDF + AES-256-GCM) and never travels in the
   clear; the server keeps it like session material. The device ID travels
   in the URL **fragment** (`#d=…`) — browsers never send that part to any
   server, so it stays out of logs.
@@ -233,5 +281,5 @@ expire through disuse) kills its sessions immediately.
 ---
 
 Schmoose is built to be boring to operate: one compose file, three
-containers, automatic schema migrations, images pulled from ghcr.
-Pull, restart, done — now go schmooze.
+containers (four with the built-in IDP), automatic schema migrations,
+images pulled from ghcr. Pull, restart, done — now go schmooze.

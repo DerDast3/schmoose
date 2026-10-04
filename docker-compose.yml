@@ -65,6 +65,24 @@ services:
     depends_on: [server]
     networks: [frontend]
 
+  # Built-in IDP (D77): a simple OIDC provider backed by ./userdata.json —
+  # the no-Keycloak option. Only starts with `--profile idp`. Users are
+  # managed by editing the file (hot-reloaded; initial cleartext passwords
+  # are hashed on each user's first login). nginx routes /realms/ to it.
+  idp:
+    image: ghcr.io/derdast3/messenger-mock-oidc:latest
+    profiles: ["idp"]
+    restart: unless-stopped
+    environment:
+      # must match the server's OIDC_ISSUER exactly (the browser-facing URL)
+      OIDC_ISSUER: "https://${PUBLIC_HOST:?set PUBLIC_HOST in .env}/realms/myrealm"
+      OIDC_AUDIENCE: schmoose
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ${USERDATA_FILE:-./userdata.json}:/app/userdata.json
+    networks: [frontend]
+
 networks:
   frontend: {}
   database: {}

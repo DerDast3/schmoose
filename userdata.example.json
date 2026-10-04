@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "Schmoose built-in IDP user file (copy to userdata.json next to the compose file).",
+    "Fields: login (username or email at the IDP login form), email (the account",
+    "mapping key — REQUIRED), password (INITIAL password in cleartext; it is",
+    "hashed automatically on the user's first login), optional claims dict —",
+    "if present it REPLACES the default token claims entirely (preferred_username,",
+    "email), so include everything you want the app to see (e.g. name, photoUrl,",
+    "a short-name claim). The file is re-read on every login: add or remove users",
+    "by editing it — no restart needed. Keep it private: chmod 600 userdata.json."
+  ],
+  "users": [
+    {
+      "login": "alice",
+      "email": "alice@example.com",
+      "password": "initial-alice-pw"
+    },
+    {
+      "login": "bob@example.com",
+      "email": "bob@example.com",
+      "password": "initial-bob-pw",
+      "claims": {
+        "preferred_username": "bob",
+        "email": "bob@example.com",
+        "name": "Bob Builder",
+        "photoUrl": "https://example.com/bob.png"
+      }
+    }
+  ]
+}
