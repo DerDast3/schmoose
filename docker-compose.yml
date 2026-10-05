@@ -55,6 +55,10 @@ services:
       # together with INTEGRATIONS_DIR in .env to enable mail/post triggers
       # and the ingress API (see README "Integrations"):
       # - ./integrations:/app/integrations:ro
+      # D84: internal certificate authorities — mount your host trust bundle
+      # so the container verifies internal HTTPS targets (avatar/photo claims
+      # on internal hosts, mail gateways, trigger endpoints):
+      # - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
     depends_on:
       postgres:
         condition: service_healthy

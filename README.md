@@ -224,6 +224,53 @@ not part of these files.
 
 ## Troubleshooting
 
+### Profile picture / avatar (and other file writes) silently missing
+
+The server writes avatars and chat attachments into `./attachments`. Two
+classic traps:
+
+1. **Ownership mismatch.** The server container runs as the image's default
+   user — **uid/gid 1000** (`node` in the node:alpine image). If your host
+   user has a different uid, the container cannot write into a
+   `schmoose`-owned folder: SSO avatars, "Choose picture" and chat
+   attachments all fail **silently**. Fix either side:
+
+   ```sh
+   sudo chown -R 1000:1000 attachments        # match the container user, or
+   ```
+
+   ```yaml
+   # in the compose (server service) — match the host user instead:
+   user: "1001:1001"                          # numbers from: id <youruser>
+   ```
+
+   Verify from inside: `docker compose exec server id` and
+   `docker compose exec server touch /data/attachments/.writetest`.
+
+2. **Internal certificate authority.** If the avatar/photo claim points to
+   an internal HTTPS host signed by your company CA, the container cannot
+   verify it (`UNABLE_TO_VERIFY_LEAF_SIGNATURE` — a complete chain is not
+   enough when the root CA is unknown to Node's built-in bundle). Mount
+   your host trust bundle and point Node at it:
+
+   ```yaml
+   # compose (server service):
+   environment:
+     NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ca-certificates.crt
+   volumes:
+     - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+   ```
+
+   The same fix makes **every** internal HTTPS target verifiable (mail
+   gateways, trigger endpoints). After CA renewals on the host, restart
+   the server container once (bind mounts pin the file).
+
+   Diagnose the exact cause from the server log — avatar fetch failures
+   include the underlying error cause:
+   `docker compose logs server | grep '\[oidc\]'`
+
+### The rest
+
 - `docker compose logs server | grep -iE "error|seed|migrate"` — application log
 - `docker compose ps` + `docker compose exec postgres pg_isready -U messenger` — stack state
 - Deployment problems: report to the maintainer.
@@ -273,6 +320,9 @@ chmod 600 integrations/integrations.json
   "postTriggers": {
     "tickets": {
       "url": "https://hooks.example.com/services/abc",
+      // optional: explicit Host header (fetch would silently drop it;
+      // strict vhost-routed targets need this):
+      // "host": "hooks.example.com",
       "headers": { "Authorization": "Bearer the-hook-token" },
       // "json-template": a JSON body built from the template; the
       // placeholders {message}, {author} and {chat} are substituted:
