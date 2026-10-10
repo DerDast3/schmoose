@@ -481,18 +481,21 @@ The server image ships an offline importer for Mattermost bulk exports
 # 3. run it inside the server container (idempotent — re-runs resume):
 docker compose exec server node dist/scripts/import-mm.js \
   --file /srv/mm-import/import.jsonl --zip /srv/mm-import/export.zip \
-  --team dialogika --source mm:full
+  --team myteam --source mm:full --bot-domain bots.example.com
 ```
 
+- `--team` picks which Mattermost team to import (run it once per team).
 - Users are created `sso_only` and **merge by email** — the first
-  Keycloak login adopts the imported history. Mattermost usernames stay
-  as usernames (override per user with a JSONL `--mapping` file).
+  login at your identity provider adopts the imported history.
+  Mattermost usernames stay as usernames (override per user with a
+  JSONL `--mapping` file).
 - Channels, memberships and roles import completely; `--after` filters
   only messages, `--attachments-after` only files (older files become a
   visible placeholder in the message). Both dates are `YYYYMMDD`.
 - Plugin **bots** become active `sso_only` accounts named
-  `<bot>@bot.dialogika.de` (they can be given real AD accounts later and
-  then generate per-chat API keys like any user).
+  `<bot>@<--bot-domain>` (set the domain to something you control —
+  create matching accounts in your Keycloak / OIDC provider later, then
+  log in as the bot and generate per-chat API keys like any user).
 - The importer is **read-only** for Mattermost and additive for Schmoose —
   run a `--dry-run` first; the report lists counts, bot accounts, applied
   mention rewrites and every skipped attachment with its reason.
