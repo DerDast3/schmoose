@@ -465,3 +465,34 @@ You need your computer and your phone, and about two minutes:
 Schmoose is built to be boring to operate: one compose file, three
 containers (four with the built-in IDP), automatic schema migrations,
 images pulled from ghcr. Pull, restart, done — now go schmooze.
+
+## Migrating history from Mattermost (optional)
+
+The server image ships an offline importer for Mattermost bulk exports
+(`mmctl export` — the JSONL plus the ZIP's `data/` attachment tree):
+
+```sh
+# 1. place the export next to the compose file and expose it to the server
+#    container (uncomment in docker-compose.yml:
+#      - ./mm-import:/srv/mm-import:ro        # under server.volumes)
+# 2. pick your limits — messages and attachments filter INDEPENDENTLY:
+#      --after 20260101              # only messages newer than this date
+#      --attachments-after 20260401  # only files newer than this date
+# 3. run it inside the server container (idempotent — re-runs resume):
+docker compose exec server node dist/scripts/import-mm.js \
+  --file /srv/mm-import/import.jsonl --zip /srv/mm-import/export.zip \
+  --team dialogika --source mm:full
+```
+
+- Users are created `sso_only` and **merge by email** — the first
+  Keycloak login adopts the imported history. Mattermost usernames stay
+  as usernames (override per user with a JSONL `--mapping` file).
+- Channels, memberships and roles import completely; `--after` filters
+  only messages, `--attachments-after` only files (older files become a
+  visible placeholder in the message). Both dates are `YYYYMMDD`.
+- Plugin **bots** become active `sso_only` accounts named
+  `<bot>@bot.dialogika.de` (they can be given real AD accounts later and
+  then generate per-chat API keys like any user).
+- The importer is **read-only** for Mattermost and additive for Schmoose —
+  run a `--dry-run` first; the report lists counts, bot accounts, applied
+  mention rewrites and every skipped attachment with its reason.
