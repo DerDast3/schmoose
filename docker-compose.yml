@@ -5,10 +5,27 @@
 # NICHT in den Repo-Klon — siehe README, Abschnitt Layout.
 name: schmoose
 
+# Logging: journald (aktiv) — klassisch lesen mit
+#   journalctl -t schmoose-server -f          (live folgen)
+#   journalctl -t schmoose-server --since "1 hour ago"
+# Logs überleben Container-Neustarts UND Recreates (Journal liegt auf dem
+# Host). Rotation: /etc/systemd/journald.conf → SystemMaxUse=500M.
+# Host OHNE systemd/journald (z. B. Alpine/OpenRC)? Dann in JEDEM Dienst
+# den logging-Block ersetzen durch:
+#   logging:
+#     driver: json-file
+#     options:
+#       max-size: "10m"
+#       max-file: "3"
+
 services:
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: schmoose-postgres
     environment:
       POSTGRES_DB: messenger
       POSTGRES_USER: messenger
@@ -27,6 +44,10 @@ services:
   server:
     image: ghcr.io/derdast3/messenger-server:latest
     restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: schmoose-server
     environment:
       DATABASE_URL: postgres://messenger:${POSTGRES_PASSWORD}@postgres:5432/messenger
       PORT: "8080"
@@ -67,6 +88,10 @@ services:
   web:
     image: ghcr.io/derdast3/messenger-web:latest
     restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: schmoose-web
     ports:
       - "443:443"
     environment:
@@ -85,6 +110,10 @@ services:
     image: ghcr.io/derdast3/messenger-mock-oidc:latest
     profiles: ["idp"]
     restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: schmoose-idp
     environment:
       # must match the server's OIDC_ISSUER exactly (the browser-facing URL)
       OIDC_ISSUER: "https://${PUBLIC_HOST:?set PUBLIC_HOST in .env}/realms/myrealm"
