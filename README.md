@@ -499,3 +499,32 @@ docker compose exec server node dist/scripts/import-mm.js \
 - The importer is **read-only** for Mattermost and additive for Schmoose —
   run a `--dry-run` first; the report lists counts, bot accounts, applied
   mention rewrites and every skipped attachment with its reason.
+
+### User mapping file (`--mapping users.jsonl`, optional)
+
+Without a mapping file every user imports as-is, keyed by their
+Mattermost email — that is the identity key, so the first login at your
+provider merges the account automatically. A mapping file (JSONL, one
+object per line) is for the exceptions:
+
+```jsonl
+{"mm_username":"daniel","username":"dast","display_name":"Daniel Stephan","short_name":"dast"}
+{"mm_username":"jane","email":"jane.doe@example.com"}
+{"mm_username":"departed","import":false}
+```
+
+- `mm_username` — the Mattermost username (match key).
+- `username` — the Schmoose username to use instead. **Every `@mmname`
+  mention in imported messages is rewritten to `@newname` before
+  rendering**, so old mentions keep pointing at the person.
+- `email` — override the target email. It must match what your identity
+  provider sends on login — that is how the merge works.
+- `display_name`, `short_name` — fix the visible name (Mattermost often
+  receives first/last name swapped from directory sync; short name is
+  capped at 8 characters).
+- `import: false` — leave this person out entirely (their messages are
+  skipped too).
+
+Users that appear in the export but have **no** mapping entry import
+with their Mattermost username and email. The report prints how many
+mention rewrites were applied.
