@@ -137,7 +137,11 @@ docker compose --profile idp up -d
 ```
 
 - **Adding/removing users = editing the file.** `userdata.json` is
-  re-read on every login — no restart, no admin UI.
+  re-read on every login — no restart, no admin UI. **Edit the file in
+  place** (it is a single-file bind mount: tools that write a new file
+  and rename it — some editors, `sed -i` — leave the container serving
+  the stale old copy; if logins ignore your edits, run
+  `docker compose restart idp`).
 - Initial passwords sit in **cleartext** in the file and are hashed
   (scrypt) automatically on each user's **first successful login**.
   Treat the file like a password list: `chmod 600`, never commit it.
