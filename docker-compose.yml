@@ -72,6 +72,10 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - ./attachments:/data/attachments
+      # MM history import (README "Migrating history from Mattermost") —
+      # put import.jsonl + the export ZIP into ./mm-import next to this
+      # file, then uncomment to expose them to the container:
+      # - ./mm-import:/srv/mm-import:ro
       # D79/D80: integrations.json (chmod 600, hot-reloaded) — uncomment
       # together with INTEGRATIONS_DIR in .env to enable mail/post triggers
       # and the ingress API (see README "Integrations"):
