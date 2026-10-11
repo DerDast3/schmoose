@@ -499,6 +499,31 @@ docker compose exec server node dist/scripts/import-mm.js \
 - The importer is **read-only** for Mattermost and additive for Schmoose —
   run a `--dry-run` first; the report lists counts, bot accounts, applied
   mention rewrites and every skipped attachment with its reason.
+- **Runtime & resilience:** a month-scale export (100k messages, ~13k
+  attachments) takes roughly **30 minutes** — run it detached so a dropped
+  SSH session does not kill it:
+  `nohup docker compose exec -T server node dist/scripts/import-mm.js … > import.log 2>&1 &`
+  The run is **resumable** (an `import_map` table tracks what landed) — if
+  it aborts, just start it again; the report at the end prints the totals.
+  If a large ZIP dies immediately with
+  `ERR_CHILD_PROCESS_STDIO_MAXBUFFER`, your server image predates the
+  fix — `docker compose pull && docker compose up -d` first.
+
+### Fresh start before an import (optional)
+
+The importer is additive and merge-by-email, so it can run into a live
+system. For a clean rebuild from scratch instead:
+
+```sh
+sh reset-database.sh --i-know-this-wipes-everything
+```
+
+This stops the stack, deletes the database and all attachment files, and
+boots it back empty (schema migrations + bootstrap admin from
+`ADMIN_PASSWORD`). Everything comes back with the import or the users'
+first OIDC login. Without the script, the manual equivalent is
+`docker compose down`, emptying `./postgres` and `./attachments`, then
+`docker compose up -d`.
 
 ### User mapping file (`--mapping users.jsonl`, optional)
 
