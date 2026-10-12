@@ -487,6 +487,14 @@ nohup docker compose exec -T server node dist/scripts/import-mm.js \
   --team myteam --source mm:full --bot-domain bots.example.com \
   > import.log 2>&1 &
 tail -f import.log        # progress lines + the JSON report at the end
+
+Faster on big exports: unpack the ZIP once and pass the folder instead
+(media files barely compress — the unpacked tree reads directly, no
+per-file decompression):
+```sh
+unzip -q /srv/mm-import/export.zip -d /srv/mm-import/unpacked
+# then: --attachments-dir /srv/mm-import/unpacked  (instead of --zip)
+```
 ```
 
 - `--team` picks which Mattermost team to import (run it once per team).
