@@ -487,15 +487,33 @@ nohup docker compose exec -T server node dist/scripts/import-mm.js \
   --team myteam --source mm:full --bot-domain bots.example.com \
   > import.log 2>&1 &
 tail -f import.log        # progress lines + the JSON report at the end
+```
 
-Faster on big exports: unpack the ZIP once and pass the folder instead
-(media files barely compress — the unpacked tree reads directly, no
-per-file decompression):
+### Attachment source: `--zip` or `--attachments-dir`
+
+The attachments reach the importer in one of two ways — pick ONE
+(`--zip` and `--attachments-dir` are mutually exclusive):
+
+**`--zip /srv/mm-import/export.zip`** — the export ZIP as it comes out
+of `mmctl export build`. No extra disk, nothing to prepare. Internally
+each attachment is read by spawning a Python helper that opens the ZIP,
+parses the central directory and decompresses the entry — on very large
+ZIPs (10+ GB) that overhead per file is noticeable (expect the
+attachment phase to take noticeably longer than the messages).
+
+**`--attachments-dir /srv/mm-import/unpacked`** — the same ZIP unpacked
+once, passing the folder that contains the `data/` tree:
+
 ```sh
 unzip -q /srv/mm-import/export.zip -d /srv/mm-import/unpacked
 # then: --attachments-dir /srv/mm-import/unpacked  (instead of --zip)
 ```
-```
+
+Media files barely compress (often < 20%), so unpacking costs disk but
+buys speed: attachments are read directly from disk — no per-file
+decompression, no ZIP directory parsing. The recommended mode for
+full-history imports. The size checks (`missing` / `oversized` /
+`empty` placeholders) behave identically in both modes.
 
 - `--team` picks which Mattermost team to import (run it once per team).
   It must match the export's team slug **EXACTLY — case-sensitive**; a
