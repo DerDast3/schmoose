@@ -479,12 +479,22 @@ The server image ships an offline importer for Mattermost bulk exports
 #      --after 20260101              # only messages newer than this date
 #      --attachments-after 20260401  # only files newer than this date
 # 3. run it inside the server container (idempotent — re-runs resume):
-docker compose exec server node dist/scripts/import-mm.js \
+#    the -T flag matters: without it the command dies INSTANTLY when run
+#    via nohup or with redirected output ("the input device is not a TTY"
+#    — the error hides in nohup.out and nothing gets imported)
+nohup docker compose exec -T server node dist/scripts/import-mm.js \
   --file /srv/mm-import/import.jsonl --zip /srv/mm-import/export.zip \
-  --team myteam --source mm:full --bot-domain bots.example.com
+  --team myteam --source mm:full --bot-domain bots.example.com \
+  > import.log 2>&1 &
+tail -f import.log        # progress lines + the JSON report at the end
 ```
 
 - `--team` picks which Mattermost team to import (run it once per team).
+  It must match the export's team slug **EXACTLY — case-sensitive**; a
+  mismatch silently imports zero group channels (direct chats still
+  import). Find the slug:
+  `grep -m1 '"type":"channel"' /srv/mm-import/import.jsonl` — the
+  channel's `team` field is the value for `--team`.
 - Users are created `sso_only` and **merge by email** — the first
   login at your identity provider adopts the imported history.
   Mattermost usernames stay as usernames (override per user with a
