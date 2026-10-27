@@ -14,6 +14,20 @@ This repository contains the **deployment files** for running Schmoose on
 your own server. The application itself is shipped as prebuilt container
 images.
 
+**Contents:** [What you get](#what-you-get) · [Requirements](#requirements) ·
+[Quick start](#quick-start) · [User management](#user-management--three-ways) ·
+[SSO (OIDC)](#single-sign-on-oidc) · [Integrations](#integrations--admin-guide-mail-http-triggers-ingress) ·
+[Mobile app (PWA)](#install-as-a-mobile-app-pwa) ·
+[QR device pairing](#connecting-your-phone--qr-device-pairing-step-by-step) ·
+[MM history import](#migrating-history-from-mattermost-optional) ·
+[Troubleshooting](#troubleshooting)
+
+**End-user documentation:** [How to log in](https://github.com/DerDast3/messenger/blob/main/docs/HOW-TO-LOGIN.md)
+(all login ways incl. the portable login file) and the
+[user guide](https://github.com/DerDast3/messenger/blob/main/docs/USER-GUIDE.md)
+(daily use: chats, search, threads, reactions, settings) — share these two
+links with your team.
+
 ## What you get
 
 - **Real-time everything** — WebSocket live updates, typing indicators,
