@@ -15,11 +15,33 @@ login file) see **[HOW-TO-LOGIN.md](HOW-TO-LOGIN.md)**.
 - Quiet **direct chats** disappear from the sidebar after ~30 days of
   silence (operator-configurable). Nothing is deleted — find them again
   via search.
-- **Pinned threads** (pin a thread in the thread bar) appear as indented
-  sub-items under their chat in the sidebar, with an activity dot. They
-  are pruned after 7 silent days.
+- **Pinned threads** appear as indented sub-items under their chat in the
+  sidebar (personal `↳`, global 📌 — details in "Pinned threads" below).
 - Unread chats rise dynamically under Favorites until read; the
   **unread filter** (Ctrl+Shift+U) hides everything else.
+
+- **Pinned threads in the rail** — two kinds:
+
+  - **Personal pin (for me):** hit the pin in the thread bar (or a
+    message's action bar), give the thread a name, and it appears as an
+    indented sub `↳` under its chat — only for you. Every device you sign
+    in with sees your pins.
+  - **Global pin (for everyone):** the same dialog offers **"For
+    everyone"** where allowed. The sub (📌) then appears in the rail of
+    **every member** of the chat, live, with the same name for all.
+    Rights: in public groups any member may pin and remove; in private
+    groups only owners; direct chats have no global pins. A chat carries
+    at most 10 global pins.
+  - **A thread can carry both.** If a global pin exists, the rail shows
+    only it — your personal pin is kept (hidden, not deleted) and comes
+    back as soon as somebody removes the global one. Removing a global
+    pin never touches other people's personal pins.
+  - **Pins fade after 7 days of thread silence** — they are shortcuts,
+    not archives; just re-pin after activity. Threads silent longer than
+    that can't be pinned until somebody writes in them again.
+  - The little **dot** on a sub means "new messages since you last looked"
+    (personal, regardless of pin kind). Global pins can also be managed in
+    the chat's manage dialog ("Pinned threads (for everyone)").
 
 ## Messages
 
