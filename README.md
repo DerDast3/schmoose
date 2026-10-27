@@ -22,9 +22,9 @@ images.
 [MM history import](#migrating-history-from-mattermost-optional) ·
 [Troubleshooting](#troubleshooting)
 
-**End-user documentation:** [How to log in](https://github.com/DerDast3/messenger/blob/main/docs/HOW-TO-LOGIN.md)
+**End-user documentation:** [How to log in](docs/HOW-TO-LOGIN.md)
 (all login ways incl. the portable login file) and the
-[user guide](https://github.com/DerDast3/messenger/blob/main/docs/USER-GUIDE.md)
+[user guide](docs/USER-GUIDE.md)
 (daily use: chats, search, threads, reactions, settings) — share these two
 links with your team.
 
