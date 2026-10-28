@@ -64,6 +64,10 @@ services:
       OIDC_JWKS_URL: "${OIDC_JWKS_URL:?set OIDC_JWKS_URL in .env}"
       OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:?set OIDC_CLIENT_ID in .env}"
       OIDC_REDIRECT_URI: "https://${PUBLIC_HOST}/api/auth/oidc/callback"
+      # D103: creating a login file from an SSO session requires a fresh
+      # sign-in — sessions older than this are signed out first (default 15,
+      # 0 disables the freshness requirement)
+      LOGIN_FILE_FRESH_MINUTES: "${LOGIN_FILE_FRESH_MINUTES:-15}"
       # D79/D80: integrations (mail/post triggers + ingress CIDR allowlist) —
       # optional; leave unset to disable. The directory holds
       # integrations.json (chmod 600, hot-reloaded, see README).
