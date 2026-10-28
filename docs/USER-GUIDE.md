@@ -94,6 +94,8 @@ a chat, or globally from the rail):
 Open via the menu band (top right) → **Profile & security**:
 
 - **Display name** (empty = sign-in name) and an **about** text.
+- **Session info**: which session you are in, how old it is, and when you
+  last signed in (any method) — shown right under the dialog title.
 - **Avatar**: upload a picture; removing it falls back to your
   sign-in picture (from SSO) or the letter chip.
 - **Text size** (compact/normal/large) via the menu band menu.

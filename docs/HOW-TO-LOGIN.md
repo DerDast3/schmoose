@@ -73,6 +73,14 @@ file** plus a one-time **passphrase** from a signed-in session:
 3. Click **Download .key file** — you get
    `schmoose-login-<date>.key`.
 
+**Signing in via SSO? One extra step.** Creating a login file requires a
+*fresh* sign-in. Your profile shows how old your session is; if your SSO
+session is older than a few minutes (default 15), the button reads
+**"Sign in again & create login file"** — clicking it signs you out and
+takes you through your single sign-on once, then you land right back where
+you were and the file is created. This is deliberate: a stolen old session
+should not be able to mint new sign-in credentials silently.
+
 **Use (on the home computer):**
 
 1. On the Schmoose login screen, switch to the **"Login file"** tab.
@@ -100,8 +108,11 @@ Devices list.
 Every sign-in creates a session. Password and SSO sessions may manage
 password/2FA settings in the profile; **device sessions** (QR, one-tap,
 login file) deliberately may not — sign in with your password to manage
-those. SSO-only accounts manage credentials at their identity provider and
-cannot mint login files.
+those. Your profile shows **which session you are in, how old it is, and
+when you last signed in** (any method). SSO-only accounts manage
+credentials at their identity provider, but they can create login files
+(after the fresh sign-in above) — that is the supported way to reach a
+home computer without the company IdP.
 
 ## Troubleshooting
 
