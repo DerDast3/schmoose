@@ -56,6 +56,9 @@ login file) see **[HOW-TO-LOGIN.md](HOW-TO-LOGIN.md)**.
   messages.
 - **Reactions**: hover a message (long-press on mobile) and pick 👍 ❌ 🅰️
   🤩 or open the full emoji picker (🤩). Click a chip to toggle your own.
+  **Hover a reaction chip** to see who reacted — all display names (aliases)
+  in a dark bubble; very long lists are cut at a character budget with
+  „+N more".
 - **@mentions**: type `@` to open the people picker. Mentioning someone in
   a public chat adds them and starts their unread counter at the mention.
 - **Replies & threads**: ↩ on a message quotes it as a reply; the `N ↩`
