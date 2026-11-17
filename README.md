@@ -16,7 +16,8 @@ images.
 
 **Contents:** [What you get](#what-you-get) · [Requirements](#requirements) ·
 [Quick start](#quick-start) · [User management](#user-management--three-ways) ·
-[SSO (OIDC)](#single-sign-on-oidc) · [Integrations](#integrations--admin-guide-mail-http-triggers-ingress) ·
+[SSO (OIDC)](#single-sign-on-oidc) · [Video "Schmoose Live"](#video--schmoose-live-optional) ·
+[Integrations](#integrations--admin-guide-mail-http-triggers-ingress) ·
 [Mobile app (PWA)](#install-as-a-mobile-app-pwa) ·
 [QR device pairing](#connecting-your-phone--qr-device-pairing-step-by-step) ·
 [MM history import](#migrating-history-from-mattermost-optional) ·
@@ -233,6 +234,32 @@ uploaded an own avatar.
 Accounts are created automatically on first SSO login (JIT) with the
 provider's email as their identity; such accounts have no local password and
 sign in via SSO only.
+
+## Video — "Schmoose Live" (optional)
+
+Every chat header gets a **video button**: clicking it opens the call room
+that belongs to THIS chat in a new tab — join an ongoing call or be the
+first; members of the same chat land in the same room. Only chat members
+see the button and can enter; name, initials and color theme carry over
+automatically (no second sign-in). The video engine ("SFU") is a separate
+service — deliberately not part of the messenger stack (own compose project,
+mediasoup, ports TCP 9443 + UDP 40000–40100). Contract and room model:
+`docs/RTC-SFU.md` in the messenger repo.
+
+**`.env`:**
+
+| Variable | Meaning |
+|---|---|
+| `SFU_URL` | Base URL of your SFU, e.g. `https://sfu.example.com:9443`. **Empty = video disabled** (no button). |
+| `SFU_API_KEY` | Shared secret between Schmoose and the SFU. Both sides hold the pair `<API key>` + `<URL of the other>`: the SFU config must carry THIS Schmoose's public URL and the SAME key. Schmoose uses it for server-to-server room calls (`POST /api/rooms`), never in the browser. |
+
+How it works, in one breath: the browser asks the Schmoose backend
+(membership is checked there), the backend asks the SFU for the chat's
+room, signs a short-lived ticket (Ed25519, ≤ 120 s, contains name,
+initials, theme and the room) and hands it to the new tab via the URL
+fragment — the fragment never reaches any server log. The SFU verifies
+the ticket against Schmoose's public key and issues its own session
+(reconnects survive network hiccups without a new ticket).
 
 ## Firewall
 
