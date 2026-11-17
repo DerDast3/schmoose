@@ -118,6 +118,15 @@ Open via the menu band (top right) → **Profile & security**:
 - The layout switches between list and chat pane automatically; the
   back gesture returns from a chat.
 
+## Video („Schmoose Live")
+
+- If the operator enabled the video service, the chat header shows a
+  **video button**. Clicking it opens a new tab with the room that belongs
+  to THIS chat — join an ongoing call or be the first; others click the
+  same button in the same chat and land in the same room.
+- Only members of the chat can open its room. Your name, initials and
+  color theme carry over automatically (no second sign-in).
+
 ## Keyboard reset
 
 Ctrl+Z undoes composer edits natively (wraps included). Ctrl+F in an open
