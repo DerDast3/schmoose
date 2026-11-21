@@ -68,6 +68,11 @@ services:
       # sign-in — sessions older than this are signed out first (default 15,
       # 0 disables the freshness requirement)
       LOGIN_FILE_FRESH_MINUTES: "${LOGIN_FILE_FRESH_MINUTES:-15}"
+      # D105 "Schmoose Live": video rooms as a separate SFU service
+      # (docs/RTC-SFU.md in the messenger repo) — empty URL = disabled
+      # (no video button). The API key must match the SFU's API_KEY.
+      SFU_URL: "${SFU_URL:-}"
+      SFU_API_KEY: "${SFU_API_KEY:-}"
       # D79/D80: integrations (mail/post triggers + ingress CIDR allowlist) —
       # optional; leave unset to disable. The directory holds
       # integrations.json (chmod 600, hot-reloaded, see README).
