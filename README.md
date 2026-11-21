@@ -261,6 +261,29 @@ fragment — the fragment never reaches any server log. The SFU verifies
 the ticket against Schmoose's public key and issues its own session
 (reconnects survive network hiccups without a new ticket).
 
+**Activation checklist (in this order) — if the video button does not
+appear, check these top-down:**
+
+1. **Compose passthrough**: the `server` service in `docker-compose.yml`
+   must carry `SFU_URL: "${SFU_URL:-}"` + `SFU_API_KEY:
+   "${SFU_API_KEY:-}"` (present since 944ad23 — older deployment files
+   silently swallow the variables from `.env`).
+2. **`.env`** filled as in the table above (the key must EQUAL the SFU's
+   `API_KEY` — one shared secret, different variable names on the two
+   sides).
+3. **Recreate, do not restart**: `docker compose pull && docker compose
+   up -d` — a plain `restart` does NOT re-read `.env` (the environment is
+   baked in at container creation).
+4. **Verify the backend advertises it**:
+   `curl -s https://<PUBLIC_HOST>/api/health | grep sfuEnabled` →
+   `"sfuEnabled": true`.
+5. **Hard-reload the browser tab** — the button visibility is decided
+   from `/api/health` at app boot; a long-open tab learns nothing.
+6. Button there but clicking fails with a 502 toast → the SFU side: it
+   must run with `AUTH_MODE=ticket` (it fail-fasts otherwise), and its
+   config carries `SCHMOOSE_URL=https://<PUBLIC_HOST>` + the same
+   `API_KEY`.
+
 ## Firewall
 
 Only port 443 is public. Host-level protection (fail2ban, iptables,
